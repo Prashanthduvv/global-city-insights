@@ -4,7 +4,7 @@
  */
 const CONFIG = {
   // ⚠️ Update this URL after you deploy backend to Render
-  PROD_API_URL: 'https://global-city-insights-api.onrender.com',
+  PROD_API_URL: 'https://global-city-insights-api-dasg.onrender.com',
   DEV_API_URL: 'http://localhost:5000',
 
   get API_BASE_URL() {
