@@ -2,6 +2,7 @@ services:
   - type: web
     name: global-city-insights-api
     env: node
+    rootDir: backend
     region: oregon
     plan: free
     buildCommand: npm install
