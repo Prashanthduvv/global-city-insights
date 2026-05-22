@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Global City Insights — Real-Time Weather, AQI & More</title>
+  <meta name="description" content="Interactive world map showing real-time weather, air quality index, population and currency data for 10 global cities."/>
+  <meta name="theme-color" content="#070b14"/>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <!-- App CSS -->
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+  <!-- ═══════════════════ LOADING OVERLAY ═══════════════════ -->
+  <div id="loading-overlay">
+    <div class="loading-content">
+      <div class="loading-globe">🌍</div>
+      <div class="loading-spinner"></div>
+      <p class="loading-title">Global City Insights</p>
+      <p class="loading-sub">Loading live data from 10 cities…</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ HEADER ═══════════════════ -->
+  <header id="header">
+    <div class="header-left">
+      <button id="sidebar-toggle" class="icon-btn" title="City List" aria-label="Open city list">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="logo">
+        <span class="logo-icon">🌐</span>
+        <div>
+          <span class="logo-title">Global City Insights</span>
+          <span class="logo-sub">Real-Time Dashboard</span>
+        </div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="refresh-info">
+        <span id="last-refresh">Connecting…</span>
+        <span id="next-refresh" class="next-refresh">—</span>
+      </div>
+      <div class="live-dot" title="Live data"></div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════ MAP ═══════════════════ -->
+  <div id="map"></div>
+
+  <!-- ═══════════════════ AQI LEGEND ═══════════════════ -->
+  <div id="aqi-legend">
+    <div class="legend-title">Air Quality Index</div>
+    <div class="legend-items">
+      <span class="legend-dot" style="background:#10b981"></span><span>Good</span>
+      <span class="legend-dot" style="background:#84cc16"></span><span>Fair</span>
+      <span class="legend-dot" style="background:#f59e0b"></span><span>Moderate</span>
+      <span class="legend-dot" style="background:#ef4444"></span><span>Poor</span>
+      <span class="legend-dot" style="background:#8b5cf6"></span><span>Very Poor</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ CITY LIST SIDEBAR ═══════════════════ -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <h2>🌆 Cities</h2>
+      <button id="sidebar-close" class="icon-btn" aria-label="Close sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div id="city-list"></div>
+  </aside>
+  <div id="sidebar-backdrop"></div>
+
+  <!-- ═══════════════════ MODAL OVERLAY ═══════════════════ -->
+  <div id="modal-overlay" class="hidden"></div>
+
+  <!-- ═══════════════════ CITY DETAIL MODAL ═══════════════════ -->
+  <div id="city-modal" class="hidden" role="dialog" aria-modal="true" aria-labelledby="modal-city-name">
+
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <div class="modal-city-identity">
+        <span id="modal-flag" class="modal-flag">🌍</span>
+        <div>
+          <h2 id="modal-city-name">—</h2>
+          <span id="modal-country" class="modal-country">—</span>
+        </div>
+      </div>
+      <div class="modal-header-right">
+        <span id="modal-updated" class="modal-updated">—</span>
+        <button id="modal-close" class="icon-btn" aria-label="Close modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Top cards: Gauge + AQI -->
+    <div class="modal-top-grid">
+
+      <!-- Temperature Gauge Card -->
+      <div class="modal-card gauge-card">
+        <div class="card-label">🌡 Temperature</div>
+        <div id="gauge-container"></div>
+        <div id="gauge-feels" class="gauge-feels">—</div>
+      </div>
+
+      <!-- AQI Card -->
+      <div class="modal-card aqi-card">
+        <div class="card-label">💨 Air Quality</div>
+        <div id="aqi-badge" class="aqi-badge">
+          <div id="aqi-icon" class="aqi-icon">—</div>
+          <div id="aqi-value-num" class="aqi-value-num">—</div>
+          <div id="aqi-label" class="aqi-label">Loading…</div>
+        </div>
+        <div class="aqi-scale-bar">
+          <div class="aqi-scale-seg" style="background:#10b981" title="Good"></div>
+          <div class="aqi-scale-seg" style="background:#84cc16" title="Fair"></div>
+          <div class="aqi-scale-seg" style="background:#f59e0b" title="Moderate"></div>
+          <div class="aqi-scale-seg" style="background:#ef4444" title="Poor"></div>
+          <div class="aqi-scale-seg" style="background:#8b5cf6" title="Very Poor"></div>
+        </div>
+        <div class="aqi-scale-labels"><span>Good</span><span>Very Poor</span></div>
+      </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="modal-card metrics-card">
+      <div class="card-label">📊 Metrics</div>
+      <div class="metrics-grid">
+        <div class="metric-item">
+          <span class="metric-icon">💧</span>
+          <span class="metric-key">Humidity</span>
+          <span id="m-humidity" class="metric-val">—</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-icon">💨</span>
+          <span class="metric-key">Wind</span>
+          <span id="m-wind" class="metric-val">—</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-icon">🧭</span>
+          <span class="metric-key">Pressure</span>
+          <span id="m-pressure" class="metric-val">—</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-icon">👁</span>
+          <span class="metric-key">Visibility</span>
+          <span id="m-visibility" class="metric-val">—</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-icon">☁️</span>
+          <span class="metric-key">Cloud Cover</span>
+          <span id="m-cloud" class="metric-val">—</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-icon">🌤</span>
+          <span class="metric-key">Condition</span>
+          <span id="m-desc" class="metric-val">—</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-icon">🟢</span>
+          <span class="metric-key">PM2.5</span>
+          <span id="m-pm25" class="metric-val">—</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-icon">🟡</span>
+          <span class="metric-key">PM10</span>
+          <span id="m-pm10" class="metric-val">—</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-icon">🔵</span>
+          <span class="metric-key">Ozone (O₃)</span>
+          <span id="m-o3" class="metric-val">—</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-icon">🟠</span>
+          <span class="metric-key">NO₂</span>
+          <span id="m-no2" class="metric-val">—</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-icon">🟤</span>
+          <span class="metric-key">SO₂</span>
+          <span id="m-so2" class="metric-val">—</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-icon">⚫</span>
+          <span class="metric-key">CO</span>
+          <span id="m-co" class="metric-val">—</span>
+        </div>
+        <div class="metric-item span-2">
+          <span class="metric-icon">👥</span>
+          <span class="metric-key">Population</span>
+          <span id="m-pop" class="metric-val">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Currency Card -->
+    <div class="modal-card currency-card">
+      <div class="card-label">💱 Currency vs ₹ Indian Rupee</div>
+      <div class="currency-body">
+        <div class="currency-left">
+          <div id="cur-code" class="cur-code">—</div>
+          <div id="cur-name" class="cur-name">—</div>
+        </div>
+        <div class="currency-rates">
+          <div id="cur-rate-to" class="cur-rate primary-rate">—</div>
+          <div id="cur-rate-from" class="cur-rate secondary-rate">—</div>
+        </div>
+      </div>
+      <div id="cur-updated" class="cur-updated">—</div>
+    </div>
+
+    <!-- Trend Charts -->
+    <div class="modal-card charts-card">
+      <div class="charts-header">
+        <div class="card-label">📈 7-Day Trends</div>
+        <div class="chart-tabs">
+          <button id="tab-temp" class="chart-tab-btn active" data-tab="temp">Temperature</button>
+          <button id="tab-aqi"  class="chart-tab-btn"        data-tab="aqi">AQI</button>
+        </div>
+      </div>
+      <div id="charts-loading" class="charts-loading hidden">
+        <div class="mini-spinner"></div> Loading history…
+      </div>
+      <div id="panel-temp" class="chart-panel">
+        <canvas id="temp-chart" height="180"></canvas>
+      </div>
+      <div id="panel-aqi" class="chart-panel hidden">
+        <canvas id="aqi-chart" height="180"></canvas>
+      </div>
+    </div>
+
+  </div><!-- /#city-modal -->
+
+  <!-- ═══════════════════ TOAST ═══════════════════ -->
+  <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+  <!-- ═══════════════════ SCRIPTS ═══════════════════ -->
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- App scripts (order matters) -->
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/gauge.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/modal.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
