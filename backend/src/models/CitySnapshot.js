@@ -10,7 +10,7 @@ const citySnapshotSchema = new mongoose.Schema(
       lat: Number,
       lon: Number,
     },
-    timestamp: { type: Date, default: Date.now, index: true },
+    timestamp: { type: Date, default: Date.now },
     weather: {
       temperature: Number,     // °C
       feelsLike: Number,       // °C
